@@ -81,3 +81,25 @@ func (p *PostgresUserRepository) UpdateReating(ctx context.Context, id uuid.UUID
 	}
 	return nil
 }
+
+func (p *PostgresUserRepository) GetTopByRating(ctx context.Context, limit int) ([]*domain.User, error) {
+	query := `SELECT id, name, username, reating, crteatedAt FROM users ORDER BY reating DESC LIMIT $1`
+
+	rows, err := p.pool.Query(ctx, query, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var topUsers []*domain.User
+	for rows.Next() {
+		user := &domain.User{}
+		err := rows.Scan(&user.Id, &user.Name, &user.Username, &user.Reating, &user.CrteatedAt)
+		if err != nil {
+			return nil, err
+		}
+		topUsers = append(topUsers, user)
+	}
+
+	return topUsers, nil
+}

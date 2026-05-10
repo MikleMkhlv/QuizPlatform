@@ -13,6 +13,7 @@ type UserRepository interface {
 	GetById(ctx context.Context, id uuid.UUID) (*domain.User, error)
 	GetByUsername(ctx context.Context, username string) (*domain.User, error)
 	UpdateReating(ctx context.Context, id uuid.UUID, delta int) error
+	GetTopByRating(ctx context.Context, limit int) ([]*domain.User, error)
 }
 
 type UserService struct {
@@ -42,4 +43,21 @@ func (ur *UserService) Register(ctx context.Context, name, username string) (*do
 		return nil, fmt.Errorf("create user %s is error: %d\n", user.Username, err)
 	}
 	return user, nil
+}
+
+func (ur *UserService) UpdateReating(ctx context.Context, id uuid.UUID, delta int) error {
+	err := ur.repo.UpdateReating(ctx, id, delta)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (ur *UserService) GetTopUsers(ctx context.Context, limit int) ([]*domain.User, error) {
+	topUsers, err := ur.repo.GetTopByRating(ctx, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	return topUsers, nil
 }

@@ -3,6 +3,7 @@ package inmemory
 import (
 	"context"
 	"fmt"
+	"sort"
 	"sync"
 
 	"github.com/google/uuid"
@@ -39,7 +40,8 @@ func (p *inMemoryUserRepository) GetById(ctx context.Context, id uuid.UUID) (*do
 			return value, nil
 		}
 	}
-	return nil, fmt.Errorf("such user {%s} does not exist\n", id.String())
+	// return nil, fmt.Errorf("such user {%s} does not exist\n", id.String())
+	return nil, nil
 }
 
 func (p *inMemoryUserRepository) GetByUsername(ctx context.Context, username string) (*domain.User, error) {
@@ -50,7 +52,8 @@ func (p *inMemoryUserRepository) GetByUsername(ctx context.Context, username str
 			return value, nil
 		}
 	}
-	return nil, fmt.Errorf("such user username {%s} does not exist\n", username)
+	// return nil, fmt.Errorf("such user username {%s} does not exist\n", username)
+	return nil, nil
 }
 
 func (p *inMemoryUserRepository) UpdateReating(ctx context.Context, id uuid.UUID, delta int) error {
@@ -78,4 +81,23 @@ func (p *inMemoryUserRepository) UpdateReating(ctx context.Context, id uuid.UUID
 		}
 	}
 	return nil
+}
+
+func (p *inMemoryUserRepository) GetTopByRating(ctx context.Context, limit int) ([]*domain.User, error) {
+	var allUsers []*domain.User
+
+	for _, v := range p.repo {
+		allUsers = append(allUsers, v)
+	}
+
+	sort.Slice(allUsers, func(i, j int) bool {
+		return allUsers[i].Reating > allUsers[j].Reating
+	})
+
+	var userWithTopReating []*domain.User
+	for i := 0; i < limit; i++ {
+		userWithTopReating = append(userWithTopReating, allUsers[i])
+	}
+
+	return userWithTopReating, nil
 }
