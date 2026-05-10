@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/google/uuid"
 	"github.com/yourname/quiz-platform/internal/domain"
@@ -25,5 +26,20 @@ func NewUserService(repo UserRepository) *UserService {
 }
 
 func (ur *UserService) Register(ctx context.Context, name, username string) (*domain.User, error) {
-	return nil, nil
+	existing, err := ur.repo.GetByUsername(ctx, username)
+	if err != nil {
+		return nil, err
+	}
+	//Проверка: Есть ли полученный username в БД. Если "Да", то регистрация прекращается. Если "Нет", то идем дальше
+	if existing != nil {
+		return nil, fmt.Errorf("user %s is already taken", existing.Username)
+	}
+	// Создание нового юзера
+	user := domain.NewUser(name, username)
+
+	//Сохранение в репозиторий
+	if err := ur.repo.Create(ctx, user); err != nil {
+		return nil, fmt.Errorf("create user %s is error: %d", user.Username, err)
+	}
+	return user, nil
 }
