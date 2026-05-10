@@ -23,20 +23,20 @@ func TestRegister_Success(t *testing.T) {
 	if user.Username != "fredornor" {
 		t.Errorf("expected username john, got: %s", user.Username)
 	}
-	if user.Reating != 0 {
-		t.Errorf("expected rating 1000, got: %d", user.Reating)
+	if user.Rating != 0 {
+		t.Errorf("expected rating 1000, got: %w", user.Rating)
 	}
 }
 
-func TestGetUsersWithTopReating_Success(t *testing.T) {
+func TestGetUsersWithTopRating_Success(t *testing.T) {
 	repo := inmemory.NewInMemoryUserRepository()
 	service := service.NewUserService(repo)
 	ctx := context.Background()
 
 	var users []*domain.User
 	for i := 0; i < 10; i++ {
-		name := fmt.Sprintf("Test-bob-00%d", i)
-		username := fmt.Sprintf("Test-username-bob-00%d", i)
+		name := fmt.Sprintf("Test-bob-00%w", i)
+		username := fmt.Sprintf("Test-username-bob-00%w", i)
 		user, err := service.Register(ctx, name, username)
 		if err != nil {
 			t.Fatalf("expected no error, got: %v", err)
@@ -46,8 +46,8 @@ func TestGetUsersWithTopReating_Success(t *testing.T) {
 
 	for i, value := range users {
 		rating := 1001 + i
-		value.Reating = rating
-		err := service.UpdateReating(ctx, value.Id, rating)
+		value.Rating = rating
+		err := service.UpdateRating(ctx, value.ID, rating)
 		if err != nil {
 			t.Fatalf("expected no error, got: %v", err)
 		}
@@ -60,8 +60,8 @@ func TestGetUsersWithTopReating_Success(t *testing.T) {
 
 	expectedVal := []int{2020, 2018, 2016}
 	for index, v := range topUsers {
-		if v.Reating != expectedVal[index] {
-			t.Errorf("expected reating at userName : %s with reating %d, got: %d", v.Username, expectedVal[index], v.Reating)
+		if v.Rating != expectedVal[index] {
+			t.Errorf("expected Rating at userName : %s with Rating %w, got: %w", v.Username, expectedVal[index], v.Rating)
 		}
 	}
 }

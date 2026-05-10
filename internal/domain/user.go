@@ -7,20 +7,20 @@ import (
 )
 
 type User struct {
-	Id         uuid.UUID
-	Name       string
-	Username   string
-	Reating    int
-	CrteatedAt time.Time
+	ID        uuid.UUID
+	Name      string
+	Username  string
+	Rating    int
+	CreatedAt time.Time
 }
 
 func NewUser(name string, username string) *User {
 	return &User{
-		Id:         uuid.New(),
-		Name:       name,
-		Username:   username,
-		Reating:    0,
-		CrteatedAt: time.Now(),
+		ID:        uuid.New(),
+		Name:      name,
+		Username:  username,
+		Rating:    0,
+		CreatedAt: time.Now(),
 	}
 }
 

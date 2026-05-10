@@ -10,9 +10,9 @@ import (
 
 type UserRepository interface {
 	Create(ctx context.Context, user *domain.User) error
-	GetById(ctx context.Context, id uuid.UUID) (*domain.User, error)
+	GetByID(ctx context.Context, id uuid.UUID) (*domain.User, error)
 	GetByUsername(ctx context.Context, username string) (*domain.User, error)
-	UpdateReating(ctx context.Context, id uuid.UUID, delta int) error
+	UpdateRating(ctx context.Context, id uuid.UUID, delta int) error
 	GetTopByRating(ctx context.Context, limit int) ([]*domain.User, error)
 }
 
@@ -33,20 +33,20 @@ func (ur *UserService) Register(ctx context.Context, name, username string) (*do
 	}
 	//Проверка: Есть ли полученный username в БД. Если "Да", то регистрация прекращается. Если "Нет", то идем дальше
 	if existing != nil {
-		return nil, fmt.Errorf("user %s is already taken\n", existing.Username)
+		return nil, fmt.Errorf("user %s is already taken", existing.Username)
 	}
 	// Создание нового юзера
 	user := domain.NewUser(name, username)
 
 	//Сохранение в репозиторий
 	if err := ur.repo.Create(ctx, user); err != nil {
-		return nil, fmt.Errorf("create user %s is error: %d\n", user.Username, err)
+		return nil, fmt.Errorf("create user %s is error: %w", user.Username, err)
 	}
 	return user, nil
 }
 
-func (ur *UserService) UpdateReating(ctx context.Context, id uuid.UUID, delta int) error {
-	err := ur.repo.UpdateReating(ctx, id, delta)
+func (ur *UserService) UpdateRating(ctx context.Context, id uuid.UUID, delta int) error {
+	err := ur.repo.UpdateRating(ctx, id, delta)
 	if err != nil {
 		return err
 	}
