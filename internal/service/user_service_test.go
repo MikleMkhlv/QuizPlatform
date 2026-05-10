@@ -2,66 +2,85 @@ package service_test
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
-	"github.com/yourname/quiz-platform/internal/domain"
 	"github.com/yourname/quiz-platform/internal/repository/inmemory"
 	"github.com/yourname/quiz-platform/internal/service"
 )
 
-func TestRegister_Success(t *testing.T) {
+func TestGetUsersWithTopRating_Success(t *testing.T) {
 	repo := inmemory.NewInMemoryUserRepository()
-	service := service.NewUserService(repo)
-
+	svc := service.NewUserService(repo)
 	ctx := context.Background()
-	user, err := service.Register(ctx, "Fred", "fredornor")
-	if err != nil {
-		t.Fatalf("expected no error, got: %v", err)
+
+	testCases := []struct {
+		name     string
+		username string
+		rating   int
+	}{
+		{"Alice", "alice", 500},
+		{"Bob", "bob", 1500},
+		{"Charlie", "charlie", 1000},
+		{"Dave", "dave", 2000},
+		{"Eve", "eve", 750},
 	}
 
-	if user.Username != "fredornor" {
-		t.Errorf("expected username john, got: %s", user.Username)
+	// Register сразу возвращает *User с ID — используем его!
+	for _, tc := range testCases {
+		user, err := svc.Register(ctx, tc.name, tc.username)
+		if err != nil {
+			t.Fatalf("register failed: %v", err)
+		}
+
+		// Сразу устанавливаем рейтинг — никакого лишнего запроса
+		err = svc.UpdateRating(ctx, user.ID, tc.rating)
+		if err != nil {
+			t.Fatalf("update rating failed: %v", err)
+		}
 	}
-	if user.Rating != 0 {
-		t.Errorf("expected rating 1000, got: %w", user.Rating)
+
+	topUsers, err := svc.GetTopUsers(ctx, 3)
+	if err != nil {
+		t.Fatalf("get top users failed: %v", err)
+	}
+
+	if len(topUsers) != 3 {
+		t.Fatalf("expected 3 users, got %d", len(topUsers))
+	}
+
+	expected := []struct {
+		username string
+		rating   int
+	}{
+		{"dave", 2000},
+		{"bob", 1500},
+		{"charlie", 1000},
+	}
+
+	for i, exp := range expected {
+		if topUsers[i].Username != exp.username {
+			t.Errorf("position %d: expected username %s, got %s",
+				i, exp.username, topUsers[i].Username)
+		}
+		if topUsers[i].Rating != exp.rating {
+			t.Errorf("position %d: expected rating %d, got %d",
+				i, exp.rating, topUsers[i].Rating)
+		}
 	}
 }
 
-func TestGetUsersWithTopRating_Success(t *testing.T) {
+func TestRegister_DuplicateUsername(t *testing.T) {
 	repo := inmemory.NewInMemoryUserRepository()
-	service := service.NewUserService(repo)
+	svc := service.NewUserService(repo)
 	ctx := context.Background()
 
-	var users []*domain.User
-	for i := 0; i < 10; i++ {
-		name := fmt.Sprintf("Test-bob-00%w", i)
-		username := fmt.Sprintf("Test-username-bob-00%w", i)
-		user, err := service.Register(ctx, name, username)
-		if err != nil {
-			t.Fatalf("expected no error, got: %v", err)
-		}
-		users = append(users, user)
-	}
-
-	for i, value := range users {
-		rating := 1001 + i
-		value.Rating = rating
-		err := service.UpdateRating(ctx, value.ID, rating)
-		if err != nil {
-			t.Fatalf("expected no error, got: %v", err)
-		}
-	}
-
-	topUsers, err := service.GetTopUsers(ctx, 3)
+	_, err := svc.Register(ctx, "Fred", "fredornor")
 	if err != nil {
-		t.Fatalf("expected no error, got: %v", err)
+		t.Fatalf("first register failed: %v", err)
 	}
 
-	expectedVal := []int{2020, 2018, 2016}
-	for index, v := range topUsers {
-		if v.Rating != expectedVal[index] {
-			t.Errorf("expected Rating at userName : %s with Rating %w, got: %w", v.Username, expectedVal[index], v.Rating)
-		}
+	_, err = svc.Register(ctx, "Another Fred", "fredornor")
+	if err == nil {
+		t.Fatal("expected error for duplicate username, got nil")
 	}
 }

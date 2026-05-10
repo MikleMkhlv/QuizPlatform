@@ -46,11 +46,7 @@ func (ur *UserService) Register(ctx context.Context, name, username string) (*do
 }
 
 func (ur *UserService) UpdateRating(ctx context.Context, id uuid.UUID, delta int) error {
-	err := ur.repo.UpdateRating(ctx, id, delta)
-	if err != nil {
-		return err
-	}
-	return nil
+	return ur.repo.UpdateRating(ctx, id, delta)
 }
 
 func (ur *UserService) GetTopUsers(ctx context.Context, limit int) ([]*domain.User, error) {
