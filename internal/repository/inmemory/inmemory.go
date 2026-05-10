@@ -3,13 +3,15 @@ package inmemory
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	"github.com/google/uuid"
 	"github.com/yourname/quiz-platform/internal/domain"
 )
 
 type inMemoryUserRepository struct {
-	repo map[int]*domain.User
+	repo  map[int]*domain.User
+	mutex sync.RWMutex
 }
 
 var Instanse *inMemoryUserRepository
@@ -23,11 +25,15 @@ func NewInMemoryUserRepository() *inMemoryUserRepository {
 }
 
 func (p *inMemoryUserRepository) Create(ctx context.Context, user *domain.User) error {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
 	p.repo[len(p.repo)+1] = user
 	return nil
 }
 
 func (p *inMemoryUserRepository) GetById(ctx context.Context, id uuid.UUID) (*domain.User, error) {
+	p.mutex.RLock()
+	defer p.mutex.RUnlock()
 	for _, value := range p.repo {
 		if value.Id == id {
 			return value, nil
@@ -37,6 +43,8 @@ func (p *inMemoryUserRepository) GetById(ctx context.Context, id uuid.UUID) (*do
 }
 
 func (p *inMemoryUserRepository) GetByUsername(ctx context.Context, username string) (*domain.User, error) {
+	p.mutex.RLock()
+	defer p.mutex.RUnlock()
 	for _, value := range p.repo {
 		if value.Username == username {
 			return value, nil
@@ -61,6 +69,8 @@ func (p *inMemoryUserRepository) UpdateReating(ctx context.Context, id uuid.UUID
 
 	existing.Reating = newReating
 
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
 	for k, v := range p.repo {
 		if v.Id == existing.Id {
 			p.repo[k] = existing
