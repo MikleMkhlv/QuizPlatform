@@ -32,14 +32,14 @@ func (ur *UserService) Register(ctx context.Context, name, username string) (*do
 	}
 	//Проверка: Есть ли полученный username в БД. Если "Да", то регистрация прекращается. Если "Нет", то идем дальше
 	if existing != nil {
-		return nil, fmt.Errorf("user %s is already taken", existing.Username)
+		return nil, fmt.Errorf("user %s is already taken\n", existing.Username)
 	}
 	// Создание нового юзера
 	user := domain.NewUser(name, username)
 
 	//Сохранение в репозиторий
 	if err := ur.repo.Create(ctx, user); err != nil {
-		return nil, fmt.Errorf("create user %s is error: %d", user.Username, err)
+		return nil, fmt.Errorf("create user %s is error: %d\n", user.Username, err)
 	}
 	return user, nil
 }

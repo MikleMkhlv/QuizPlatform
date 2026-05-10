@@ -21,7 +21,7 @@ func (p *PostgresUserRepository) Create(ctx context.Context, user *domain.User) 
 	query := `INSERT INTO users (id, name, username, reating, crteatedAt) VALUES ($1, $2, $3, $4, $5)`
 	_, err := p.pool.Exec(ctx, query, user.Id, user.Name, user.Username, user.Reating, user.CrteatedAt)
 	if err != nil {
-		return fmt.Errorf("postgres create user: %w", err)
+		return fmt.Errorf("postgres create user: %w\n", err)
 	}
 	return nil
 }
@@ -67,7 +67,7 @@ func (p *PostgresUserRepository) UpdateReating(ctx context.Context, id uuid.UUID
 	}
 
 	if existing == nil {
-		return fmt.Errorf("such user {%s} does not exist", id.String())
+		return fmt.Errorf("such user {%s} does not exist\n", id.String())
 	}
 	newReating := existing.Reating + delta
 	if newReating < 0 {
@@ -77,7 +77,7 @@ func (p *PostgresUserRepository) UpdateReating(ctx context.Context, id uuid.UUID
 	query := `UPDATE users SET reating = $1 WHERE id = $2`
 	_, err = p.pool.Exec(ctx, query, delta, id.String())
 	if err != nil {
-		return fmt.Errorf("postgres update rating: %w", err)
+		return fmt.Errorf("postgres update rating: %w\n", err)
 	}
 	return nil
 }
