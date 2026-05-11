@@ -45,6 +45,14 @@ func TestCreateNewRoom_Success(t *testing.T) {
 	}
 }
 
+// TODO реализовать тесты
+// TestCreateRoom_Success          — happy path
+// TestCreateRoom_UserNotFound     — хост не существует
+// TestJoinRoom_Success            — игрок заходит в комнату
+// TestJoinRoom_RoomNotFound       — неверный код комнаты
+// TestJoinRoom_RoomFull           — комната заполнена
+// TestJoinRoom_WrongStatus        — игра уже началась
+
 func TestAddNewPlayerInRoomByRoomID_Success(t *testing.T) {
 
 }
