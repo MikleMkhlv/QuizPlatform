@@ -14,7 +14,7 @@ type RoomRepository interface {
 	GetRoomByCode(ctx context.Context, roomCode string) (*domain.Room, error)
 	AddPlauer(ctx context.Context, newPlauer *domain.RoomPlauer) error
 	GetPlauersFromRoom(ctx context.Context, roomId uuid.UUID) ([]*domain.User, error)
-	UpdateroomStatus(ctx context.Context, roomId uuid.UUID, status domain.RoomStatus) error
+	UpdateRoomStatus(ctx context.Context, roomId uuid.UUID, status domain.RoomStatus) error
 }
 
 type RoomService struct {

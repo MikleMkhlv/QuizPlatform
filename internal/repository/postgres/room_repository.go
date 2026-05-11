@@ -108,7 +108,7 @@ func (p *PostgresRoomRepository) GetPlauersFromRoom(ctx context.Context, roomId 
 	return users, nil
 }
 
-func (p *PostgresRoomRepository) UpdateroomStatus(ctx context.Context, roomId uuid.UUID, status domain.RoomStatus) error {
+func (p *PostgresRoomRepository) UpdateRoomStatus(ctx context.Context, roomId uuid.UUID, status domain.RoomStatus) error {
 	query := `UPDATE rooms SET status = $1 WHERE id = $2`
 	_, err := p.pool.Exec(ctx, query, roomId, status)
 	if err != nil {
