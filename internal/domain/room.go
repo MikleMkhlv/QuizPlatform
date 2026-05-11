@@ -10,7 +10,7 @@ import (
 type RoomStatus string
 
 const (
-	RoomStatusWating   RoomStatus = "wating"
+	RoomStatusWaiting  RoomStatus = "waiting"
 	RoomStatusActive   RoomStatus = "active"
 	RoomStatusFinished RoomStatus = "finished"
 )
@@ -20,42 +20,40 @@ type Room struct {
 	HostID    uuid.UUID
 	Code      string
 	Status    RoomStatus
-	MaxPlauer int
+	MaxPlayer int
 	CreatedAt time.Time
 }
 
-type RoomPlauer struct {
-	RoomId   uuid.UUID
-	PlauerId uuid.UUID
+type RoomPlayer struct {
+	RoomID   uuid.UUID
+	PlayerID uuid.UUID
 	JoinedAt time.Time
 }
 
-func NewRoom(hostId uuid.UUID, countPlauers int) *Room {
+func NewRoom(hostId uuid.UUID, countPlayer int) *Room {
 	return &Room{
 		ID:        uuid.New(),
 		HostID:    hostId,
 		Code:      generateCodeFromRoom(),
-		Status:    RoomStatusWating,
-		MaxPlauer: countPlauers,
+		Status:    RoomStatusWaiting,
+		MaxPlayer: countPlayer,
 		CreatedAt: time.Now(),
 	}
 }
 
-func NewRoomPlauer(roomId, plauerId uuid.UUID) *RoomPlauer {
-	return &RoomPlauer{
-		RoomId:   roomId,
-		PlauerId: plauerId,
+func NewRoomPlayer(roomId, plauerId uuid.UUID) *RoomPlayer {
+	return &RoomPlayer{
+		RoomID:   roomId,
+		PlayerID: plauerId,
 		JoinedAt: time.Now(),
 	}
 }
 
 func generateCodeFromRoom() string {
-	charSet := []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+")
-	length := 6
-	code := make([]rune, length)
+	const charSet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	code := make([]byte, 6)
 	for i := range code {
-		num := rand.IntN(len(charSet) + 1)
-		code[i] = rune(num)
+		code[i] = charSet[rand.IntN(len(charSet))] // берём символ по индексу
 	}
 	return string(code)
 }

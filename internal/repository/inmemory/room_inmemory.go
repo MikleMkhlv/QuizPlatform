@@ -12,13 +12,13 @@ import (
 type InMemoryRoomRepository struct {
 	mx         sync.RWMutex
 	rooms      map[uuid.UUID]*domain.Room
-	roomPlauer map[uuid.UUID][]domain.RoomPlauer
+	roomPlauer map[uuid.UUID][]domain.RoomPlayer
 }
 
 func NewInMemoryRoomRepository() *InMemoryRoomRepository {
 	return &InMemoryRoomRepository{
 		rooms:      make(map[uuid.UUID]*domain.Room),
-		roomPlauer: make(map[uuid.UUID][]domain.RoomPlauer),
+		roomPlauer: make(map[uuid.UUID][]domain.RoomPlayer),
 	}
 }
 
@@ -26,8 +26,8 @@ func (rr *InMemoryRoomRepository) Create(ctx context.Context, room *domain.Room)
 	rr.mx.Lock()
 	defer rr.mx.Unlock()
 	rr.rooms[room.ID] = room
-	var plauers []domain.RoomPlauer
-	plauers = append(plauers, *domain.NewRoomPlauer(room.ID, room.HostID))
+	var plauers []domain.RoomPlayer
+	plauers = append(plauers, *domain.NewRoomPlayer(room.ID, room.HostID))
 	rr.roomPlauer[room.ID] = plauers
 	return nil
 }
@@ -53,19 +53,19 @@ func (rr *InMemoryRoomRepository) GetRoomByCode(ctx context.Context, roomCode st
 	return nil, nil
 }
 
-func (rr *InMemoryRoomRepository) AddPlauer(ctx context.Context, newPlauer *domain.RoomPlauer) error {
+func (rr *InMemoryRoomRepository) AddPlayer(ctx context.Context, newPlauer *domain.RoomPlayer) error {
 	rr.mx.Lock()
 	defer rr.mx.Unlock()
-	if _, ok := rr.roomPlauer[newPlauer.RoomId]; !ok {
+	if _, ok := rr.roomPlauer[newPlauer.RoomID]; !ok {
 		return nil
 	}
-	existingRoom := rr.roomPlauer[newPlauer.RoomId]
+	existingRoom := rr.roomPlauer[newPlauer.RoomID]
 	existingRoom = append(existingRoom, *newPlauer)
-	rr.roomPlauer[newPlauer.RoomId] = existingRoom
+	rr.roomPlauer[newPlauer.RoomID] = existingRoom
 	return nil
 }
 
-func (rr *InMemoryRoomRepository) GetPlauersFromRoom(ctx context.Context, roomId uuid.UUID) ([]*domain.User, error) {
+func (rr *InMemoryRoomRepository) GetPlayersFromRoom(ctx context.Context, roomId uuid.UUID) ([]*domain.User, error) {
 	rr.mx.RLock()
 	defer rr.mx.RUnlock()
 	return nil, nil

@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -27,15 +28,21 @@ func (p *PostgresRoomRepository) Create(ctx context.Context, room *domain.Room) 
 	}
 	defer tx.Rollback(ctx)
 
-	queryCreateRoom := `INSERT INTO rooms (id, host_id, code, status, max_plauer, created_at) VALUES ($1, $2, $3, $4, $5, $6)`
-	_, err = tx.Exec(ctx, queryCreateRoom, &room.ID, &room.HostID, &room.Code, &room.Status, &room.MaxPlauer, &room.CreatedAt)
+	queryCreateRoom := `
+						INSERT INTO rooms (id, host_id, code, status, max_players, created_at) 
+						VALUES ($1, $2, $3, $4, $5, $6)
+	`
+	_, err = tx.Exec(ctx, queryCreateRoom, room.ID, room.HostID, room.Code, room.Status, room.MaxPlayer, room.CreatedAt)
 	if err != nil {
 		return err
 	}
 
-	newRoomPlauer := *domain.NewRoomPlauer(room.ID, room.HostID)
-	queryAddNewRoomPlauer := `INSERT INTO room_players (room_id, plauer_id, joined_at) VALUES ($1, $2, $3)`
-	_, err = tx.Exec(ctx, queryAddNewRoomPlauer, newRoomPlauer.RoomId, newRoomPlauer.PlauerId, newRoomPlauer.JoinedAt)
+	newPlayer := domain.NewRoomPlayer(room.ID, room.HostID)
+	queryAddNewRoomPlauer := `
+							INSERT INTO room_players (room_id, user_id, joined_at) 
+							VALUES ($1, $2, $3)
+	`
+	_, err = tx.Exec(ctx, queryAddNewRoomPlauer, newPlayer.RoomID, newPlayer.PlayerID, newPlayer.JoinedAt)
 	if err != nil {
 		return err
 	}
@@ -49,9 +56,13 @@ func (p *PostgresRoomRepository) Create(ctx context.Context, room *domain.Room) 
 }
 
 func (p *PostgresRoomRepository) GetRoomById(ctx context.Context, roomId uuid.UUID) (*domain.Room, error) {
-	query := `SELECT id, host_id, code, status, max_plauer, created_at FROM rooms WHERE id = $1`
+	query := `
+			SELECT id, host_id, code, status, max_players, created_at 
+			FROM rooms 
+			WHERE id = $1
+	`
 	room := &domain.Room{}
-	err := p.pool.QueryRow(ctx, query, roomId).Scan(&room.ID, &room.HostID, &room.Code, &room.Status, &room.MaxPlauer, &room.CreatedAt)
+	err := p.pool.QueryRow(ctx, query, roomId).Scan(&room.ID, &room.HostID, &room.Code, &room.Status, &room.MaxPlayer, &room.CreatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
 	}
@@ -62,9 +73,12 @@ func (p *PostgresRoomRepository) GetRoomById(ctx context.Context, roomId uuid.UU
 }
 
 func (p *PostgresRoomRepository) GetRoomByCode(ctx context.Context, roomCode string) (*domain.Room, error) {
-	query := `SELECT id, host_id, code, status, max_plauer, created_at FROM rooms WHERE code = $1`
+	query := `
+			SELECT id, host_id, code, status, max_players, created_at 
+			FROM rooms 
+			WHERE code = $1`
 	room := &domain.Room{}
-	err := p.pool.QueryRow(ctx, query, roomCode).Scan(&room.ID, &room.HostID, &room.Code, &room.Status, &room.MaxPlauer, &room.CreatedAt)
+	err := p.pool.QueryRow(ctx, query, roomCode).Scan(&room.ID, &room.HostID, &room.Code, &room.Status, &room.MaxPlayer, &room.CreatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
 	}
@@ -74,19 +88,23 @@ func (p *PostgresRoomRepository) GetRoomByCode(ctx context.Context, roomCode str
 	return room, nil
 }
 
-func (p *PostgresRoomRepository) AddPlauer(ctx context.Context, newPlauer *domain.RoomPlauer) error {
-	query := `INSERT INTO room_players (room_id, plauer_id, joined_at) VALUES ($1, $2, $3)`
-	_, err := p.pool.Exec(ctx, query, &newPlauer.RoomId, &newPlauer.PlauerId, &newPlauer.JoinedAt)
+func (p *PostgresRoomRepository) AddPlayer(ctx context.Context, newPlayer *domain.RoomPlayer) error {
+	query := `
+			INSERT INTO room_players (room_id, user_id, joined_at) 
+			VALUES ($1, $2, $3)
+	`
+	_, err := p.pool.Exec(ctx, query, newPlayer.RoomID, newPlayer.PlayerID, newPlayer.JoinedAt)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (p *PostgresRoomRepository) GetPlauersFromRoom(ctx context.Context, roomId uuid.UUID) ([]*domain.User, error) {
+func (p *PostgresRoomRepository) GetPlayersFromRoom(ctx context.Context, roomId uuid.UUID) ([]*domain.User, error) {
 	query := `
-			SELECT u.id, u.name, u.username, u.rating, u.created_at FROM users u
-			JOIN room_players rp ON rp.plauer_id = u.id
+			SELECT u.id, u.name, u.username, u.rating, u.created_at 
+			FROM users u
+			JOIN room_players rp ON rp.user_id = u.id
 			WHERE rp.room_id = $1
 			ORDER BY rp.joined_at ASC
 	`
@@ -105,12 +123,20 @@ func (p *PostgresRoomRepository) GetPlauersFromRoom(ctx context.Context, roomId 
 		users = append(users, user)
 	}
 
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("rows error: %w", err)
+	}
+
 	return users, nil
 }
 
 func (p *PostgresRoomRepository) UpdateRoomStatus(ctx context.Context, roomId uuid.UUID, status domain.RoomStatus) error {
-	query := `UPDATE rooms SET status = $1 WHERE id = $2`
-	_, err := p.pool.Exec(ctx, query, roomId, status)
+	query := `
+			UPDATE rooms 
+			SET status = $1 
+			WHERE id = $2
+	`
+	_, err := p.pool.Exec(ctx, query, status, roomId)
 	if err != nil {
 		return err
 	}

@@ -44,3 +44,7 @@ func TestCreateNewRoom_Success(t *testing.T) {
 		t.Errorf("The created room {%s} does not belong to the host {%s:%s}", room.ID, expectUser.Username, expectUser.ID)
 	}
 }
+
+func TestAddNewPlayerInRoomByRoomID_Success(t *testing.T) {
+
+}
