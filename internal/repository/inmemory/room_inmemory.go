@@ -9,16 +9,22 @@ import (
 	"github.com/yourname/quiz-platform/internal/domain"
 )
 
+type userGetter interface {
+	GetByID(ctx context.Context, id uuid.UUID) (*domain.User, error)
+}
+
 type InMemoryRoomRepository struct {
 	mx         sync.RWMutex
 	rooms      map[uuid.UUID]*domain.Room
-	roomPlauer map[uuid.UUID][]domain.RoomPlayer
+	roomPlayer map[uuid.UUID][]domain.RoomPlayer
+	usersRepo  userGetter
 }
 
-func NewInMemoryRoomRepository() *InMemoryRoomRepository {
+func NewInMemoryRoomRepository(usersRepo userGetter) *InMemoryRoomRepository {
 	return &InMemoryRoomRepository{
 		rooms:      make(map[uuid.UUID]*domain.Room),
-		roomPlauer: make(map[uuid.UUID][]domain.RoomPlayer),
+		roomPlayer: make(map[uuid.UUID][]domain.RoomPlayer),
+		usersRepo:  usersRepo,
 	}
 }
 
@@ -28,7 +34,7 @@ func (rr *InMemoryRoomRepository) Create(ctx context.Context, room *domain.Room)
 	rr.rooms[room.ID] = room
 	var plauers []domain.RoomPlayer
 	plauers = append(plauers, *domain.NewRoomPlayer(room.ID, room.HostID))
-	rr.roomPlauer[room.ID] = plauers
+	rr.roomPlayer[room.ID] = plauers
 	return nil
 }
 
@@ -53,30 +59,43 @@ func (rr *InMemoryRoomRepository) GetRoomByCode(ctx context.Context, roomCode st
 	return nil, nil
 }
 
-func (rr *InMemoryRoomRepository) AddPlayer(ctx context.Context, newPlauer *domain.RoomPlayer) error {
+func (rr *InMemoryRoomRepository) AddPlayer(ctx context.Context, newPlayer *domain.RoomPlayer) error {
 	rr.mx.Lock()
 	defer rr.mx.Unlock()
-	if _, ok := rr.roomPlauer[newPlauer.RoomID]; !ok {
-		return nil
+	if _, ok := rr.roomPlayer[newPlayer.RoomID]; !ok {
+		return fmt.Errorf("room %s not found", newPlayer.RoomID)
 	}
-	existingRoom := rr.roomPlauer[newPlauer.RoomID]
-	existingRoom = append(existingRoom, *newPlauer)
-	rr.roomPlauer[newPlauer.RoomID] = existingRoom
+	existingRoom := rr.roomPlayer[newPlayer.RoomID]
+	existingRoom = append(existingRoom, *newPlayer)
+	rr.roomPlayer[newPlayer.RoomID] = existingRoom
 	return nil
 }
 
 func (rr *InMemoryRoomRepository) GetPlayersFromRoom(ctx context.Context, roomId uuid.UUID) ([]*domain.User, error) {
 	rr.mx.RLock()
-	defer rr.mx.RUnlock()
-	return nil, nil
+	usersInRoom := rr.roomPlayer[roomId]
+	rr.mx.RUnlock()
+	var u []*domain.User
+	for _, v := range usersInRoom {
+		if v.RoomID == roomId {
+			user, err := rr.usersRepo.GetByID(ctx, v.PlayerID)
+			if err != nil {
+				return nil, err
+			}
+			u = append(u, user)
+		}
+	}
+	return u, nil
 }
 
 func (rr *InMemoryRoomRepository) UpdateRoomStatus(ctx context.Context, roomId uuid.UUID, status domain.RoomStatus) error {
 	rr.mx.Lock()
 	defer rr.mx.Unlock()
-	if v, ok := rr.rooms[roomId]; ok {
-		v.Status = status
-		rr.rooms[roomId] = v
+
+	room, ok := rr.rooms[roomId]
+	if !ok {
+		return fmt.Errorf("room %s not found", roomId)
 	}
+	room.Status = status
 	return nil
 }

@@ -74,3 +74,11 @@ func (r *RoomService) Join(ctx context.Context, code string, userId uuid.UUID) (
 	}
 	return existingRoom, nil
 }
+
+func (r *RoomService) UpdateRoomStatus(ctx context.Context, roomId uuid.UUID, status domain.RoomStatus) error {
+	return r.roomRepo.UpdateRoomStatus(ctx, roomId, status)
+}
+
+func (r *RoomService) GetRoomByID(ctx context.Context, roomId uuid.UUID) (*domain.Room, error) {
+	return r.roomRepo.GetRoomById(ctx, roomId)
+}

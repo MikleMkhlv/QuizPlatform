@@ -64,7 +64,7 @@ func (p *PostgresRoomRepository) GetRoomById(ctx context.Context, roomId uuid.UU
 	room := &domain.Room{}
 	err := p.pool.QueryRow(ctx, query, roomId).Scan(&room.ID, &room.HostID, &room.Code, &room.Status, &room.MaxPlayer, &room.CreatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return nil, nil
+		return nil, fmt.Errorf("not found room with id: %s", roomId.String())
 	}
 	if err != nil {
 		return nil, err

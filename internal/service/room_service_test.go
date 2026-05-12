@@ -33,7 +33,7 @@ func TestCreateNewRoom_Success(t *testing.T) {
 		}
 	}
 
-	roomRepo := inmemory.NewInMemoryRoomRepository()
+	roomRepo := inmemory.NewInMemoryRoomRepository(userRepo)
 	roomsServs := service.NewRoomService(userRepo, roomRepo)
 
 	room, err := roomsServs.CreateRoom(ctx, expectUser.ID, 4)
@@ -56,7 +56,7 @@ func TestCreateNewRoom_Success(t *testing.T) {
 
 func TestCreateRoom_UserNotFound(t *testing.T) {
 	userRepo := inmemory.NewInMemoryUserRepository()
-	roomRepo := inmemory.NewInMemoryRoomRepository()
+	roomRepo := inmemory.NewInMemoryRoomRepository(userRepo)
 	roomsServs := service.NewRoomService(userRepo, roomRepo)
 
 	ctx := context.Background()
@@ -103,7 +103,7 @@ func TestJoinRoom_Success(t *testing.T) {
 		expectUser = append(expectUser, *user)
 	}
 
-	roomRepo := inmemory.NewInMemoryRoomRepository()
+	roomRepo := inmemory.NewInMemoryRoomRepository(userRepo)
 	roomsServs := service.NewRoomService(userRepo, roomRepo)
 
 	room, err := roomsServs.CreateRoom(ctx, expectUser[0].ID, 4)
@@ -125,7 +125,7 @@ func TestJoinRoom_Success(t *testing.T) {
 
 func TestJoinRoom_RoomNotFound(t *testing.T) {
 	userRepo := inmemory.NewInMemoryUserRepository()
-	roomRepo := inmemory.NewInMemoryRoomRepository()
+	roomRepo := inmemory.NewInMemoryRoomRepository(userRepo)
 	roomsServs := service.NewRoomService(userRepo, roomRepo)
 	ctx := context.Background()
 
@@ -138,7 +138,6 @@ func TestJoinRoom_RoomNotFound(t *testing.T) {
 }
 
 func TestJoinRoom_RoomFull(t *testing.T) {
-	t.Skip("Пропускаем, пока не реализованы методы в inmemory некоторые методы полученгия списка игроков") //TODO
 	userRepo := inmemory.NewInMemoryUserRepository()
 	userServs := service.NewUserService(userRepo)
 	ctx := context.Background()
@@ -162,7 +161,7 @@ func TestJoinRoom_RoomFull(t *testing.T) {
 
 	}
 
-	roomRepo := inmemory.NewInMemoryRoomRepository()
+	roomRepo := inmemory.NewInMemoryRoomRepository(userRepo)
 	roomsServs := service.NewRoomService(userRepo, roomRepo)
 
 	countUserInRoom := 2
@@ -170,11 +169,11 @@ func TestJoinRoom_RoomFull(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create room failed: %v", err)
 	}
-	for _, v := range expectUser {
-		_, err := roomsServs.Join(ctx, room.Code, v.ID)
-		if err != nil {
-			t.Fatalf("join in room failed: %v", err)
-		}
+
+	user2 := expectUser[1]
+	_, err = roomsServs.Join(ctx, room.Code, user2.ID)
+	if err != nil {
+		t.Fatalf("join in room failed: %v", err)
 	}
 
 	testCasesForNewUser := struct {
@@ -200,5 +199,52 @@ func TestJoinRoom_RoomFull(t *testing.T) {
 }
 
 func TestJoinRoom_WrongStatus(t *testing.T) {
-	t.Skip("Пропускаем, пока не реализованы методы room service для изменения статусов") //TODO
+	userRepo := inmemory.NewInMemoryUserRepository()
+	userServs := service.NewUserService(userRepo)
+	ctx := context.Background()
+
+	testCases := []struct {
+		name     string
+		username string
+		rating   int
+	}{
+		{"Alice", "alice", 500},
+		{"Alice-2", "alice-2", 200},
+	}
+
+	var expectUser []domain.User
+	for _, tc := range testCases {
+		user, err := userServs.Register(ctx, tc.name, tc.username)
+		if err != nil {
+			t.Fatalf("join in room failed: %v", err)
+		}
+		expectUser = append(expectUser, *user)
+
+	}
+
+	roomRepo := inmemory.NewInMemoryRoomRepository(userRepo)
+	roomsServs := service.NewRoomService(userRepo, roomRepo)
+
+	countUserInRoom := 2
+	room, err := roomsServs.CreateRoom(ctx, expectUser[0].ID, countUserInRoom)
+	if err != nil {
+		t.Fatalf("create room failed: %v", err)
+	}
+
+	err = roomsServs.UpdateRoomStatus(ctx, room.ID, domain.RoomStatusActive)
+	updatedRoom, err := roomsServs.GetRoomByID(ctx, room.ID)
+	if err != nil {
+		t.Fatalf("get room failed: %v", err)
+	}
+
+	user2 := expectUser[1]
+	_, err = roomsServs.Join(ctx, room.Code, user2.ID)
+	if err == nil {
+		t.Fatalf("join in room failed: %v", err)
+	}
+	expectedErr := fmt.Sprintf("room %s is not accepting players, status: %s", updatedRoom.ID, updatedRoom.Status)
+	if err.Error() != expectedErr {
+		t.Errorf("unexpected error message:\n got:  %q\n want: %q", err.Error(), expectedErr)
+	}
+
 }
