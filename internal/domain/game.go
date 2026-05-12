@@ -18,8 +18,8 @@ const (
 type PlayerAnswer struct {
 	UserID    uuid.UUID `json:"user_id"`
 	Answer    int       `json:"answer"`
-	IsCorrect bool      `json:"isCorrect"`
-	AnswerAt  time.Time `json:"answerAt"`
+	IsCorrect bool      `json:"is_correct"`
+	AnswerAt  time.Time `json:"answer_at"`
 }
 
 type GameState struct {
@@ -63,12 +63,21 @@ func (g *GameState) Start() {
 	g.UpdatedAt = time.Now()
 }
 
+func (g *GameState) Finish() {
+	g.Status = GameStatusFinished
+	g.UpdatedAt = time.Now()
+}
+
 func (g *GameState) ConvertToByte() ([]byte, error) {
 	data, err := json.Marshal(g)
 	if err != nil {
 		return nil, err
 	}
 	return data, nil
+}
+func (g *GameState) AddAnswer(answer PlayerAnswer) {
+	g.Answers = append(g.Answers, answer)
+	g.UpdatedAt = time.Now()
 }
 
 func GameStateFromBytes(data []byte) (*GameState, error) {
