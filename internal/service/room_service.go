@@ -72,6 +72,5 @@ func (r *RoomService) Join(ctx context.Context, code string, userId uuid.UUID) (
 	if err != nil {
 		return nil, err
 	}
-
 	return existingRoom, nil
 }
