@@ -31,7 +31,7 @@ func NewGameService(gameRepo GameRepository, roomRepo RoomRepository, userRepo U
 func (s *GameService) CreateGame(ctx context.Context, roomID uuid.UUID) (*domain.GameState, error) {
 	room, err := s.roomRepo.GetRoomById(ctx, roomID)
 	if err != nil {
-		return nil, fmt.Errorf("get room %s: %w", roomID, err)
+		return nil, err
 	}
 	if room == nil {
 		return nil, fmt.Errorf("room %s not found", roomID)

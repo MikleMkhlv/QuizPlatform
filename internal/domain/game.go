@@ -2,6 +2,7 @@ package domain
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -78,6 +79,14 @@ func (g *GameState) ConvertToByte() ([]byte, error) {
 func (g *GameState) AddAnswer(answer PlayerAnswer) {
 	g.Answers = append(g.Answers, answer)
 	g.UpdatedAt = time.Now()
+}
+
+func (g *GameState) String() string {
+	data, err := json.Marshal(g)
+	if err != nil {
+		return fmt.Sprintf("error marshaling GameState: %v", err)
+	}
+	return string(data)
 }
 
 func GameStateFromBytes(data []byte) (*GameState, error) {
