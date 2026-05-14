@@ -82,7 +82,7 @@ func (rh *RoomHandler) CreateRoom(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-type RoomJoinRequset struct {
+type RoomJoinRequest struct {
 	Code string `json:"room_code"`
 }
 
@@ -101,7 +101,7 @@ func (rh *RoomHandler) JoinInRoom(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	var req RoomJoinRequset
+	var req RoomJoinRequest
 	err = json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
 		http.Error(w, "error decode request body", http.StatusBadRequest)
