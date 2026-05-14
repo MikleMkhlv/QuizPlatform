@@ -6,9 +6,9 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
-	"github.com/yourname/quiz-platform/internal/domain"
-	"github.com/yourname/quiz-platform/internal/repository/inmemory"
-	"github.com/yourname/quiz-platform/internal/service"
+	"github.com/MikleMkhlv/QuizPlatform/internal/domain"
+	"github.com/MikleMkhlv/QuizPlatform/internal/repository/inmemory"
+	"github.com/MikleMkhlv/QuizPlatform/internal/service"
 )
 
 func TestCreateNewRoom_Success(t *testing.T) {

@@ -1,4 +1,5 @@
-module github.com/yourname/quiz-platform
+module github.com/MikleMkhlv/QuizPlatform
+// module github.com/yourname/quiz-platform
 
 go 1.26.1
 

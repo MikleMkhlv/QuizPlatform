@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/yourname/quiz-platform/internal/repository/inmemory"
-	"github.com/yourname/quiz-platform/internal/service"
+	"github.com/MikleMkhlv/QuizPlatform/internal/repository/inmemory"
+	"github.com/MikleMkhlv/QuizPlatform/internal/service"
 )
 
 func TestGetUsersWithTopRating_Success(t *testing.T) {

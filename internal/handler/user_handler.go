@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/MikleMkhlv/QuizPlatform/internal/domain"
 	"github.com/google/uuid"
-	"github.com/yourname/quiz-platform/internal/domain"
 )
 
 type UserServiceInterface interface {

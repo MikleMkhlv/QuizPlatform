@@ -8,7 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/yourname/quiz-platform/internal/domain"
+	"github.com/MikleMkhlv/QuizPlatform/internal/domain"
 )
 
 type PostgresUserRepository struct {

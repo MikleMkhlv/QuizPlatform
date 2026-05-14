@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/yourname/quiz-platform/internal/handler"
-	"github.com/yourname/quiz-platform/internal/repository/inmemory"
-	"github.com/yourname/quiz-platform/internal/service"
+	"github.com/MikleMkhlv/QuizPlatform/internal/handler"
+	"github.com/MikleMkhlv/QuizPlatform/internal/repository/inmemory"
+	"github.com/MikleMkhlv/QuizPlatform/internal/service"
 )
 
 func main() {

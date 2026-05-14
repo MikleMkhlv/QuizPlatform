@@ -8,7 +8,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
-	"github.com/yourname/quiz-platform/internal/domain"
+	"github.com/MikleMkhlv/QuizPlatform/internal/domain"
 )
 
 const (

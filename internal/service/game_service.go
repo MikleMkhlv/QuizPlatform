@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
-	"github.com/yourname/quiz-platform/internal/domain"
+	"github.com/MikleMkhlv/QuizPlatform/internal/domain"
 )
 
 type GameRepository interface {
