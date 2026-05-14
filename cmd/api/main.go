@@ -19,16 +19,16 @@ func main() {
 
 	userHandl := handler.NewUserHandler(userServ)
 	roomHandl := handler.NewRoomHandler(roomServ)
-	registrationRouters(userHandl, roomHandl)
+	registerRoutes(userHandl, roomHandl)
 
-	fmt.Println("Started server with зщке 8080.")
+	fmt.Println("Started server with port 8080.")
 
 	if err := http.ListenAndServe(":8080", nil); err != nil {
 		panic(err)
 	}
 }
 
-func registrationRouters(userHandl *handler.UserHandler, roomHandl *handler.RoomHandler) {
+func registerRoutes(userHandl *handler.UserHandler, roomHandl *handler.RoomHandler) {
 
 	http.HandleFunc("POST /api/users/register", userHandl.Register)
 
