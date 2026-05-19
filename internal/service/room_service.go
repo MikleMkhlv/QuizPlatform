@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/uuid"
 	"github.com/MikleMkhlv/QuizPlatform/internal/domain"
+	"github.com/google/uuid"
 )
 
 type RoomRepository interface {
@@ -81,4 +81,8 @@ func (r *RoomService) UpdateRoomStatus(ctx context.Context, roomId uuid.UUID, st
 
 func (r *RoomService) GetRoomByID(ctx context.Context, roomId uuid.UUID) (*domain.Room, error) {
 	return r.roomRepo.GetRoomById(ctx, roomId)
+}
+
+func (r *RoomService) GetRoomByRoomCode(ctx context.Context, roomCode string) (*domain.Room, error) {
+	return r.roomRepo.GetRoomByCode(ctx, roomCode)
 }
