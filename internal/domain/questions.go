@@ -2,60 +2,58 @@ package domain
 
 import "github.com/google/uuid"
 
-type Quizzes struct {
-	ID         uuid.UUID
-	Title      string
-	Created_by uuid.UUID
+type Quiz struct {
+	ID        uuid.UUID
+	Title     string
+	CreatedBy uuid.UUID
 }
-
-type Questions struct {
+type Question struct {
 	ID              uuid.UUID
-	Quiz_id         uuid.UUID
+	QuizID          uuid.UUID
 	Text            string
-	Order_num       int
-	OptionIsCorrect int
+	OrderNum        int
+	CorrectOptionID uuid.UUID
+}
+type Option struct {
+	Index      int
+	ID         uuid.UUID
+	QuestionID uuid.UUID
+	Text       string
+	IsCorrect  bool
 }
 
-type Options struct {
-	Index       int
-	ID          uuid.UUID
-	Question_id uuid.UUID
-	Text        string
-	IsCorrect   bool
-}
-
-func NewQuiz(title string, createdPlayerID uuid.UUID) *Quizzes {
-	return &Quizzes{
-		ID:         uuid.New(),
-		Title:      title,
-		Created_by: createdPlayerID,
+func NewQuiz(title string, createdPlayerID uuid.UUID) *Quiz {
+	return &Quiz{
+		ID:        uuid.New(),
+		Title:     title,
+		CreatedBy: createdPlayerID,
 	}
 }
 
-func NewQuestion(quizID uuid.UUID, text string, orderNum, optionIsCorrect int) *Questions {
-	return &Questions{
+func NewQuestion(quizID uuid.UUID, text string, orderNum int, correctOptionID uuid.UUID) *Question {
+	return &Question{
 		ID:              uuid.New(),
-		Quiz_id:         quizID,
+		QuizID:          quizID,
 		Text:            text,
-		Order_num:       orderNum,
-		OptionIsCorrect: optionIsCorrect,
+		OrderNum:        orderNum,
+		CorrectOptionID: correctOptionID,
 	}
 }
 
-func NewOption(index int, questionID uuid.UUID, text string, isCorrect bool) *Options {
-	return &Options{
-		Index:       index,
-		ID:          uuid.New(),
-		Question_id: questionID,
-		Text:        text,
-		IsCorrect:   isCorrect,
+func NewOption(index int, questionID uuid.UUID, text string, isCorrect bool) *Option {
+	return &Option{
+		Index:      index,
+		ID:         uuid.New(),
+		QuestionID: questionID,
+		Text:       text,
+		IsCorrect:  isCorrect,
 	}
 }
 
-func (qz *Quizzes) UpdateTitle(text string) {
+func (qz *Quiz) UpdateTitle(text string) {
 	qz.Title = text
 }
 
-func (quest *Questions) UpdateTextQuestion(text string) {
+func (quest *Question) UpdateTextQuestion(text string) {
 	quest.Text = text
 }

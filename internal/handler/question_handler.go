@@ -1,24 +1,17 @@
 package handler
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 
-	"github.com/MikleMkhlv/QuizPlatform/internal/domain"
+	"github.com/MikleMkhlv/QuizPlatform/internal/ports"
 	"github.com/google/uuid"
 )
 
-type QuestionInterface interface {
-	CreateQuizz(ctx context.Context, playerID uuid.UUID, title string) (*domain.Quizzes, error)
-	GetQuizzByID(ctx context.Context, quizzID uuid.UUID) (*domain.Quizzes, error)
-	AddNewQuestionsWithAnsvers(ctx context.Context, quizID uuid.UUID, text string, optionsReq []Options) error
-}
-
 type QuestionHandler struct {
-	qestionServs QuestionInterface
+	qestionServs ports.QuestionService
 }
 
 type QuizCreateRequest struct {
@@ -31,7 +24,7 @@ type QuizCreateResponse struct {
 	Title string    `json:"title"`
 }
 
-func NewQuestionHandler(qestionServs QuestionInterface) *QuestionHandler {
+func NewQuestionHandler(qestionServs ports.QuestionService) *QuestionHandler {
 	return &QuestionHandler{
 		qestionServs: qestionServs,
 	}
@@ -99,7 +92,7 @@ func (q *QuestionHandler) GetQuizzByID(w http.ResponseWriter, r *http.Request) {
 	resp := FindedQuizResponse{
 		ID:        foundQuiz.ID,
 		Title:     foundQuiz.Title,
-		CreatedBy: foundQuiz.Created_by,
+		CreatedBy: foundQuiz.CreatedBy,
 	}
 
 	data, err := json.Marshal(resp)
@@ -108,7 +101,7 @@ func (q *QuestionHandler) GetQuizzByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusCreated)
+	w.WriteHeader(http.StatusOK)
 	_, err = w.Write(data)
 	if err != nil {
 		http.Error(w, "error encoding response", http.StatusInternalServerError)
@@ -118,12 +111,7 @@ func (q *QuestionHandler) GetQuizzByID(w http.ResponseWriter, r *http.Request) {
 
 type QuestionWithOptionsReruest struct {
 	Text    string `json:"text"`
-	Options []Options
-}
-
-type Options struct {
-	Text      string `json:"text"`
-	IsCorrect bool   `json:"is_correct"`
+	Options []ports.OptionRequest
 }
 
 func (q *QuestionHandler) AddNewQuestionswithOptions(w http.ResponseWriter, r *http.Request) {
@@ -145,7 +133,7 @@ func (q *QuestionHandler) AddNewQuestionswithOptions(w http.ResponseWriter, r *h
 		return
 	}
 
-	if err := q.qestionServs.AddNewQuestionsWithAnsvers(ctx, quizzID, reqQuestion.Text, reqQuestion.Options); err != nil {
+	if err := q.qestionServs.AddNewQuestionsWithAnswers(ctx, quizzID, reqQuestion.Text, reqQuestion.Options); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}

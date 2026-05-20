@@ -20,12 +20,12 @@ func NewPostgresQuestionsRepository(pool *pgxpool.Pool) *PostgresQuestionsReposi
 	}
 }
 
-func (pq *PostgresQuestionsRepository) Create(ctx context.Context, quizz *domain.Quizzes) error {
+func (pq *PostgresQuestionsRepository) Create(ctx context.Context, quizz *domain.Quiz) error {
 	query := `
 			INSERT INTO quizzes (id, title, created_by)
 			VALUES ($1, $2, $3)
 `
-	_, err := pq.pool.Exec(ctx, query, quizz.ID, quizz.Title, quizz.Created_by)
+	_, err := pq.pool.Exec(ctx, query, quizz.ID, quizz.Title, quizz.CreatedBy)
 	if err != nil {
 		return err
 	}
@@ -33,14 +33,14 @@ func (pq *PostgresQuestionsRepository) Create(ctx context.Context, quizz *domain
 	return nil
 }
 
-func (pq *PostgresQuestionsRepository) GetQuizzByID(ctx context.Context, quizzID uuid.UUID) (*domain.Quizzes, error) {
+func (pq *PostgresQuestionsRepository) GetQuizzByID(ctx context.Context, quizzID uuid.UUID) (*domain.Quiz, error) {
 	query := `
 			SELECT id, title, created_by
 			FROM quizzes
 			WHERE id = $1
 	`
-	quizz := &domain.Quizzes{}
-	err := pq.pool.QueryRow(ctx, query, quizzID).Scan(&quizz.ID, &quizz.Title, &quizz.Created_by)
+	quizz := &domain.Quiz{}
+	err := pq.pool.QueryRow(ctx, query, quizzID).Scan(&quizz.ID, &quizz.Title, &quizz.CreatedBy)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
 	}
@@ -50,7 +50,7 @@ func (pq *PostgresQuestionsRepository) GetQuizzByID(ctx context.Context, quizzID
 	return quizz, nil
 }
 
-func (pq *PostgresQuestionsRepository) AddQuestionsWithAnswers(ctx context.Context, question *domain.Questions, options ...*domain.Options) error {
+func (pq *PostgresQuestionsRepository) AddQuestionsWithAnswers(ctx context.Context, question *domain.Question, options ...*domain.Option) error {
 	tx, err := pq.pool.Begin(ctx)
 	if err != nil {
 		return err
@@ -60,7 +60,7 @@ func (pq *PostgresQuestionsRepository) AddQuestionsWithAnswers(ctx context.Conte
 					INSERT INTO questions (id, quiz_id, text, order_num)
 					VALUES ($1, $2, $3, $4)
 	`
-	_, err = pq.pool.Exec(ctx, queryQuestion, &question.ID, &question.Quiz_id, &question.Text, &question.Order_num)
+	_, err = pq.pool.Exec(ctx, queryQuestion, &question.ID, &question.QuizID, &question.Text, &question.OrderNum)
 	if err != nil {
 		return err
 	}
@@ -69,7 +69,7 @@ func (pq *PostgresQuestionsRepository) AddQuestionsWithAnswers(ctx context.Conte
 				VALUES ($1, $2, $3, $4)
 	`
 	for _, option := range options {
-		_, err = pq.pool.Exec(ctx, queryOption, &option.ID, &option.Question_id, &option.Text, &option.IsCorrect)
+		_, err = pq.pool.Exec(ctx, queryOption, &option.ID, &option.QuestionID, &option.Text, &option.IsCorrect)
 		if err != nil {
 			return err
 		}
@@ -95,12 +95,12 @@ func (pq *PostgresQuestionsRepository) GetCountQuestionsByQuizID(ctx context.Con
 	return countQuestion, nil
 }
 
-func (pq *PostgresQuestionsRepository) GetQuestionByID(ctx context.Context, questionID uuid.UUID) (*domain.Questions, error) {
+func (pq *PostgresQuestionsRepository) GetQuestionByID(ctx context.Context, questionID uuid.UUID) (*domain.Question, error) {
 	query := `
 		SELECT (id, quiz_id, text, order_num) FROM questions WHERE id = $1
 	`
 
-	var question *domain.Questions
+	var question *domain.Question
 	if err := pq.pool.QueryRow(ctx, query, questionID).Scan(&question); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil

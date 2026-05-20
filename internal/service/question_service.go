@@ -5,16 +5,16 @@ import (
 	"fmt"
 
 	"github.com/MikleMkhlv/QuizPlatform/internal/domain"
-	"github.com/MikleMkhlv/QuizPlatform/internal/handler"
+	"github.com/MikleMkhlv/QuizPlatform/internal/ports"
 	"github.com/google/uuid"
 )
 
 type QuestionRepository interface {
-	Create(ctx context.Context, quizz *domain.Quizzes) error
-	GetQuizzByID(ctx context.Context, quizzID uuid.UUID) (*domain.Quizzes, error)
-	AddQuestionsWithAnswers(ctx context.Context, question *domain.Questions, options ...*domain.Options) error
+	Create(ctx context.Context, quizz *domain.Quiz) error
+	GetQuizzByID(ctx context.Context, quizzID uuid.UUID) (*domain.Quiz, error)
+	AddQuestionsWithAnswers(ctx context.Context, question *domain.Question, options ...*domain.Option) error
 	GetCountQuestionsByQuizID(ctx context.Context, quizID uuid.UUID) (int, error)
-	GetQuestionByID(ctx context.Context, questionID uuid.UUID) (*domain.Questions, error)
+	GetQuestionByID(ctx context.Context, questionID uuid.UUID) (*domain.Question, error)
 }
 
 type UserServiceInterface interface {
@@ -34,16 +34,13 @@ func NewQusetionService(questionsRepo QuestionRepository, userServs UserServiceI
 	}
 }
 
-func (q *QusetionService) CreateQuizz(ctx context.Context, playerID uuid.UUID, title string) (*domain.Quizzes, error) {
+func (q *QusetionService) CreateQuizz(ctx context.Context, playerID uuid.UUID, title string) (*domain.Quiz, error) {
 	foundPlayer, err := q.userServs.GetPlayerByID(ctx, playerID)
 	if err != nil {
-		return nil, err
-	}
-	if foundPlayer == nil {
-		return nil, fmt.Errorf("player {%v} is not found", playerID)
+		return nil, fmt.Errorf("player %v not found: %w", playerID, err)
 	}
 
-	newQuizz := domain.NewQuiz(title, playerID)
+	newQuizz := domain.NewQuiz(title, foundPlayer.ID)
 
 	if err := q.questionRepo.Create(ctx, newQuizz); err != nil {
 		return nil, err
@@ -51,7 +48,7 @@ func (q *QusetionService) CreateQuizz(ctx context.Context, playerID uuid.UUID, t
 	return newQuizz, nil
 }
 
-func (q *QusetionService) GetQuizzByID(ctx context.Context, quizzID uuid.UUID) (*domain.Quizzes, error) {
+func (q *QusetionService) GetQuizzByID(ctx context.Context, quizzID uuid.UUID) (*domain.Quiz, error) {
 	quizz, err := q.questionRepo.GetQuizzByID(ctx, quizzID)
 	if err != nil {
 		return nil, err
@@ -62,20 +59,18 @@ func (q *QusetionService) GetQuizzByID(ctx context.Context, quizzID uuid.UUID) (
 	return quizz, nil
 }
 
-func (q *QusetionService) AddNewQuestionsWithAnsvers(ctx context.Context, quizID uuid.UUID, text string, optionsReq []handler.Options) error {
-	foundQuiz, err := q.GetQuizzByID(ctx, quizID)
-	if err != nil {
+func (q *QusetionService) AddNewQuestionsWithAnswers(ctx context.Context, quizID uuid.UUID, text string, opt []ports.OptionRequest) error {
+	const minOptions = 2
+
+	if _, err := q.GetQuizzByID(ctx, quizID); err != nil {
 		return err
 	}
-	if foundQuiz == nil {
-		return fmt.Errorf("quiz by quizID {%v} is not found", quizID)
-	}
-	if len(optionsReq) <= 1 {
-		return fmt.Errorf("count options there nust be more than 2")
+	if len(opt) < minOptions {
+		return fmt.Errorf("question must have at least %d options, got %d", minOptions, len(opt))
 	}
 
-	var options []*domain.Options
-	for index, option := range optionsReq {
+	var options []*domain.Option
+	for index, option := range opt {
 		op := domain.NewOption(index, uuid.Nil, option.Text, option.IsCorrect)
 		options = append(options, op)
 	}
@@ -99,17 +94,17 @@ func (q *QusetionService) AddNewQuestionsWithAnsvers(ctx context.Context, quizID
 		orderNum = currentCount
 	}
 
-	newQuestion := domain.NewQuestion(quizID, text, orderNum, correctIndex)
+	correctOptionID := options[correctIndex].ID
+	newQuestion := domain.NewQuestion(quizID, text, orderNum, correctOptionID)
 
-	// Обновляем questionID в опциях
 	for _, op := range options {
-		op.Question_id = newQuestion.ID
+		op.QuestionID = newQuestion.ID
 	}
 
 	return q.questionRepo.AddQuestionsWithAnswers(ctx, newQuestion, options...)
 }
 
-func checkSingleCorrectAnswer(options []*domain.Options) error {
+func checkSingleCorrectAnswer(options []*domain.Option) error {
 	correctCount := 0
 	for _, op := range options {
 		if op.IsCorrect {
@@ -125,7 +120,7 @@ func checkSingleCorrectAnswer(options []*domain.Options) error {
 	return nil
 }
 
-func getCorrectOptionIndex(options []*domain.Options) int {
+func getCorrectOptionIndex(options []*domain.Option) int {
 	for index, op := range options {
 		if op.IsCorrect {
 			return index
@@ -134,6 +129,6 @@ func getCorrectOptionIndex(options []*domain.Options) int {
 	return -1
 }
 
-func (q *QusetionService) GetQuestionByID(ctx context.Context, questionID uuid.UUID) (*domain.Questions, error) {
+func (q *QusetionService) GetQuestionByID(ctx context.Context, questionID uuid.UUID) (*domain.Question, error) {
 	return q.questionRepo.GetQuestionByID(ctx, questionID)
 }

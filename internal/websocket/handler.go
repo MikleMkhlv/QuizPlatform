@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"sync"
 
 	"github.com/MikleMkhlv/QuizPlatform/internal/domain"
 	"github.com/MikleMkhlv/QuizPlatform/internal/ports"
@@ -18,13 +17,13 @@ type WSHandler struct {
 	hub       *Hub
 	userServ  ports.UserService
 	roomServ  ports.RoomService
-	gameServ  ports.GameService
+	gameServ  ports.GameServiceI
 	questServ ports.QuestionService
 	wsUpg     *websocket.Upgrader
-	mu        sync.Mutex
+	// mu        sync.Mutex
 }
 
-func NewWSHandler(userServ ports.UserService, roomServ ports.RoomService, gameServ ports.GameService, questServ ports.QuestionService, hub *Hub) *WSHandler {
+func NewWSHandler(userServ ports.UserService, roomServ ports.RoomService, gameServ ports.GameServiceI, questServ ports.QuestionService, hub *Hub) *WSHandler {
 	return &WSHandler{
 		userServ:  userServ,
 		roomServ:  roomServ,
@@ -99,20 +98,29 @@ func (wsh *WSHandler) Connect(w http.ResponseWriter, r *http.Request) {
 			// http.Error(w, "request body for baseType is not correct", http.StatusBadRequest)
 			continue
 		}
+
+		room, err := wsh.roomServ.GetRoomByRoomCode(ctx, roomCode)
+		if err != nil {
+			conn.WriteMessage(websocket.TextMessage, []byte("room not found"))
+			break
+		}
+
 		switch reqMsg.Type {
 		case "answer":
-			var answerReq dto.AnsverRequsest
+			if room.Status != domain.RoomStatusActive {
+				conn.WriteMessage(websocket.TextMessage, []byte("game in not active"))
+				continue
+			}
+			var answerReq dto.AnswerRequsest
 			if err := json.Unmarshal(message, &answerReq); err != nil {
 				log.Printf("error unmarshal request: %v", err)
 				conn.WriteMessage(websocket.TextMessage, []byte("request body for answer is not correct"))
-				// http.Error(w, "request body for answer is not correct", http.StatusBadRequest)
 				continue
 			}
-			fmt.Println(answerReq)
+			log.Printf("answer received: questionID=%s optionID=%s", answerReq.QuestionID, answerReq.OptionID)
 
-			if err := wsh.gameServ.SubmitAnswer(ctx, room.ID, answerReq.QuizID, playerID, answerReq.Answer); err != nil {
+			if err := wsh.gameServ.SubmitAnswer(ctx, room.ID, answerReq.QuestionID, playerID, answerReq.OptionID); err != nil {
 				conn.WriteMessage(websocket.TextMessage, []byte(err.Error()))
-				// http.Error(w, err.Error(), http.StatusBadRequest)
 				continue
 			}
 		case "create":
@@ -128,9 +136,17 @@ func (wsh *WSHandler) Connect(w http.ResponseWriter, r *http.Request) {
 			}
 			conn.WriteMessage(websocket.TextMessage, []byte("game is created"))
 		case "start":
-			if room.Status == domain.RoomStatusWaiting && room.HostID == playerID {
+			if room.Status != domain.RoomStatusWaiting {
+				conn.WriteMessage(websocket.TextMessage, []byte("game already started"))
+				continue
+			}
+			if room.HostID == playerID {
 				_, err = wsh.gameServ.StartGame(ctx, room.ID)
 				if err != nil {
+					conn.WriteMessage(websocket.TextMessage, []byte(err.Error()))
+					continue
+				}
+				if err := wsh.roomServ.UpdateRoomStatus(ctx, room.ID, domain.RoomStatusActive); err != nil {
 					conn.WriteMessage(websocket.TextMessage, []byte(err.Error()))
 					continue
 				}

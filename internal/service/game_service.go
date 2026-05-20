@@ -53,10 +53,7 @@ func (s *GameService) CreateGame(ctx context.Context, roomID uuid.UUID) (*domain
 func (s *GameService) StartGame(ctx context.Context, roomID uuid.UUID) (*domain.GameState, error) {
 	existingState, err := s.gameRepo.Get(ctx, roomID)
 	if err != nil {
-		return nil, err
-	}
-	if existingState == nil {
-		return nil, fmt.Errorf("game state from room %s is not found in redis", roomID)
+		return nil, err // сюда попадёт и "not found"
 	}
 
 	if existingState.Status != domain.GameStatusWaiting {
@@ -73,7 +70,7 @@ func (s *GameService) StartGame(ctx context.Context, roomID uuid.UUID) (*domain.
 	return existingState, nil
 }
 
-func (s *GameService) SubmitAnswer(ctx context.Context, roomID, questionID, userID uuid.UUID, answer int) error {
+func (s *GameService) SubmitAnswer(ctx context.Context, roomID, questionID, userID uuid.UUID, optionID uuid.UUID) error {
 	existingState, err := s.gameRepo.Get(ctx, roomID)
 	if err != nil {
 		return err
@@ -93,10 +90,10 @@ func (s *GameService) SubmitAnswer(ctx context.Context, roomID, questionID, user
 		return fmt.Errorf("question %s not found", questionID)
 	}
 
-	isCorrect := question.OptionIsCorrect == answer
+	isCorrect := question.CorrectOptionID == optionID
 
-	userAnswer := domain.NewPlayerAnswer(userID, answer, isCorrect)
-	existingState.AddAnswer(*userAnswer)
+	userAnswer := domain.NewPlayerAnswer(userID, optionID, isCorrect)
+	existingState.AddAnswer(userAnswer)
 
 	if err := s.gameRepo.Save(ctx, existingState); err != nil {
 		return err

@@ -18,17 +18,18 @@ type RoomService interface {
 	GetRoomByRoomCode(ctx context.Context, roomCode string) (*domain.Room, error)
 }
 
-type GameService interface {
+type GameServiceI interface {
 	CreateGame(ctx context.Context, roomID uuid.UUID) (*domain.GameState, error)
 	StartGame(ctx context.Context, roomID uuid.UUID) (*domain.GameState, error)
-	SubmitAnswer(ctx context.Context, roomID, questionID, userID uuid.UUID, answer int) error
+	SubmitAnswer(ctx context.Context, roomID, questionID, userID uuid.UUID, optionID uuid.UUID) error
 	FinishGame(ctx context.Context, roomID uuid.UUID) (*domain.GameState, error)
 }
 
 type QuestionService interface {
-	CreateQuizz(ctx context.Context, playerID uuid.UUID, title string) (*domain.Quizzes, error)
-	GetQuizzByID(ctx context.Context, quizzID uuid.UUID) (*domain.Quizzes, error)
+	CreateQuizz(ctx context.Context, playerID uuid.UUID, title string) (*domain.Quiz, error)
+	GetQuizzByID(ctx context.Context, quizzID uuid.UUID) (*domain.Quiz, error)
 	AddNewQuestionsWithAnswers(ctx context.Context, quizID uuid.UUID, text string, options []OptionRequest) error
+	GetQuestionByID(ctx context.Context, questionID uuid.UUID) (*domain.Question, error)
 }
 
 type OptionRequest struct {
