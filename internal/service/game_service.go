@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/uuid"
 	"github.com/MikleMkhlv/QuizPlatform/internal/domain"
+	"github.com/google/uuid"
 )
 
 type GameRepository interface {
@@ -15,16 +15,18 @@ type GameRepository interface {
 }
 
 type GameService struct {
-	gameRepo GameRepository
-	roomRepo RoomRepository
-	userRepo UserRepository
+	gameRepo     GameRepository
+	roomRepo     RoomRepository
+	userRepo     UserRepository
+	questionRepo QuestionRepository
 }
 
-func NewGameService(gameRepo GameRepository, roomRepo RoomRepository, userRepo UserRepository) *GameService {
+func NewGameService(gameRepo GameRepository, roomRepo RoomRepository, userRepo UserRepository, questionRepo QuestionRepository) *GameService {
 	return &GameService{
-		gameRepo: gameRepo,
-		roomRepo: roomRepo,
-		userRepo: userRepo,
+		gameRepo:     gameRepo,
+		roomRepo:     roomRepo,
+		userRepo:     userRepo,
+		questionRepo: questionRepo,
 	}
 }
 
@@ -70,7 +72,8 @@ func (s *GameService) StartGame(ctx context.Context, roomID uuid.UUID) (*domain.
 
 	return existingState, nil
 }
-func (s *GameService) SubmitAnswer(ctx context.Context, roomID, userID uuid.UUID, answer int, isCorrect bool) error {
+
+func (s *GameService) SubmitAnswer(ctx context.Context, roomID, questionID, userID uuid.UUID, answer int) error {
 	existingState, err := s.gameRepo.Get(ctx, roomID)
 	if err != nil {
 		return err
@@ -81,6 +84,17 @@ func (s *GameService) SubmitAnswer(ctx context.Context, roomID, userID uuid.UUID
 	if existingState.Status != domain.GameStatusActive {
 		return fmt.Errorf("game in room %s is not active, status: %s", roomID, existingState.Status)
 	}
+
+	question, err := s.questionRepo.GetQuestionByID(ctx, questionID)
+	if err != nil {
+		return fmt.Errorf("get question %s: %w", questionID, err)
+	}
+	if question == nil {
+		return fmt.Errorf("question %s not found", questionID)
+	}
+
+	isCorrect := question.OptionIsCorrect == answer
+
 	userAnswer := domain.NewPlayerAnswer(userID, answer, isCorrect)
 	existingState.AddAnswer(*userAnswer)
 

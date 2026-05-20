@@ -94,3 +94,18 @@ func (pq *PostgresQuestionsRepository) GetCountQuestionsByQuizID(ctx context.Con
 	}
 	return countQuestion, nil
 }
+
+func (pq *PostgresQuestionsRepository) GetQuestionByID(ctx context.Context, questionID uuid.UUID) (*domain.Questions, error) {
+	query := `
+		SELECT (id, quiz_id, text, order_num) FROM questions WHERE id = $1
+	`
+
+	var question *domain.Questions
+	if err := pq.pool.QueryRow(ctx, query, questionID).Scan(&question); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return question, nil
+}

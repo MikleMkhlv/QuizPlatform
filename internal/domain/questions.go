@@ -9,13 +9,15 @@ type Quizzes struct {
 }
 
 type Questions struct {
-	ID        uuid.UUID
-	Quiz_id   uuid.UUID
-	Text      string
-	Order_num int
+	ID              uuid.UUID
+	Quiz_id         uuid.UUID
+	Text            string
+	Order_num       int
+	OptionIsCorrect int
 }
 
 type Options struct {
+	Index       int
 	ID          uuid.UUID
 	Question_id uuid.UUID
 	Text        string
@@ -30,17 +32,19 @@ func NewQuiz(title string, createdPlayerID uuid.UUID) *Quizzes {
 	}
 }
 
-func NewQuestion(quizID uuid.UUID, text string, orderNum int) *Questions {
+func NewQuestion(quizID uuid.UUID, text string, orderNum, optionIsCorrect int) *Questions {
 	return &Questions{
-		ID:        uuid.New(),
-		Quiz_id:   quizID,
-		Text:      text,
-		Order_num: orderNum,
+		ID:              uuid.New(),
+		Quiz_id:         quizID,
+		Text:            text,
+		Order_num:       orderNum,
+		OptionIsCorrect: optionIsCorrect,
 	}
 }
 
-func NewOption(questionID uuid.UUID, text string, isCorrect bool) *Options {
+func NewOption(index int, questionID uuid.UUID, text string, isCorrect bool) *Options {
 	return &Options{
+		Index:       index,
 		ID:          uuid.New(),
 		Question_id: questionID,
 		Text:        text,
