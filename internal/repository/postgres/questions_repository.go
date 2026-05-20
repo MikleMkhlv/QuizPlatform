@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/MikleMkhlv/QuizPlatform/internal/domain"
 	"github.com/google/uuid"
@@ -42,7 +43,7 @@ func (pq *PostgresQuestionsRepository) GetQuizzByID(ctx context.Context, quizzID
 	quizz := &domain.Quiz{}
 	err := pq.pool.QueryRow(ctx, query, quizzID).Scan(&quizz.ID, &quizz.Title, &quizz.CreatedBy)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return nil, nil
+		return nil, fmt.Errorf("quiz %s not found", quizzID)
 	}
 	if err != nil {
 		return nil, err
@@ -55,21 +56,25 @@ func (pq *PostgresQuestionsRepository) AddQuestionsWithAnswers(ctx context.Conte
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback(ctx)
+	defer func() {
+		if err != nil {
+			tx.Rollback(ctx)
+		}
+	}()
 	queryQuestion := `
-					INSERT INTO questions (id, quiz_id, text, order_num)
-					VALUES ($1, $2, $3, $4)
+					INSERT INTO questions (id, quiz_id, text, order_num, correct_option_id)
+					VALUES ($1, $2, $3, $4, $5)
 	`
-	_, err = pq.pool.Exec(ctx, queryQuestion, &question.ID, &question.QuizID, &question.Text, &question.OrderNum)
+	_, err = tx.Exec(ctx, queryQuestion, &question.ID, &question.QuizID, &question.Text, &question.OrderNum, &question.CorrectOptionID)
 	if err != nil {
 		return err
 	}
 	queryOption := `
-				INSERT INTO options (id, questions_id, text, is_correct)
+				INSERT INTO options (id, question_id, text, is_correct)
 				VALUES ($1, $2, $3, $4)
 	`
 	for _, option := range options {
-		_, err = pq.pool.Exec(ctx, queryOption, &option.ID, &option.QuestionID, &option.Text, &option.IsCorrect)
+		_, err = tx.Exec(ctx, queryOption, &option.ID, &option.QuestionID, &option.Text, &option.IsCorrect)
 		if err != nil {
 			return err
 		}
@@ -83,7 +88,7 @@ func (pq *PostgresQuestionsRepository) AddQuestionsWithAnswers(ctx context.Conte
 
 func (pq *PostgresQuestionsRepository) GetCountQuestionsByQuizID(ctx context.Context, quizID uuid.UUID) (int, error) {
 	query := `
-			SELECT COUNT(quiz_id) FROM questions WHERE quiz_id = $1
+			SELECT COUNT(*) FROM questions WHERE quiz_id = $1
 `
 	var countQuestion int
 	if err := pq.pool.QueryRow(ctx, query, quizID).Scan(&countQuestion); err != nil {
@@ -97,15 +102,15 @@ func (pq *PostgresQuestionsRepository) GetCountQuestionsByQuizID(ctx context.Con
 
 func (pq *PostgresQuestionsRepository) GetQuestionByID(ctx context.Context, questionID uuid.UUID) (*domain.Question, error) {
 	query := `
-		SELECT (id, quiz_id, text, order_num) FROM questions WHERE id = $1
+		SELECT id, quiz_id, text, order_num, correct_option_id FROM questions WHERE id = $1
 	`
 
-	var question *domain.Question
-	if err := pq.pool.QueryRow(ctx, query, questionID).Scan(&question); err != nil {
+	var question domain.Question
+	if err := pq.pool.QueryRow(ctx, query, questionID).Scan(&question.ID, &question.QuizID, &question.Text, &question.OrderNum, &question.CorrectOptionID); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil
 		}
 		return nil, err
 	}
-	return question, nil
+	return &question, nil
 }
