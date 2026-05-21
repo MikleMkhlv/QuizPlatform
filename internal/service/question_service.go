@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/MikleMkhlv/QuizPlatform/internal/domain"
+	"github.com/MikleMkhlv/QuizPlatform/internal/dto"
 	"github.com/MikleMkhlv/QuizPlatform/internal/ports"
 	"github.com/google/uuid"
 )
@@ -15,6 +16,7 @@ type QuestionRepository interface {
 	AddQuestionsWithAnswers(ctx context.Context, question *domain.Question, options ...*domain.Option) error
 	GetCountQuestionsByQuizID(ctx context.Context, quizID uuid.UUID) (int, error)
 	GetQuestionByID(ctx context.Context, questionID uuid.UUID) (*domain.Question, error)
+	GetQuestionWithOptions(ctx context.Context, questionID uuid.UUID) (*dto.QuestionWithOptions, error)
 }
 
 type UserServiceInterface interface {
@@ -131,4 +133,8 @@ func getCorrectOptionIndex(options []*domain.Option) int {
 
 func (q *QusetionService) GetQuestionByID(ctx context.Context, questionID uuid.UUID) (*domain.Question, error) {
 	return q.questionRepo.GetQuestionByID(ctx, questionID)
+}
+
+func (q *QusetionService) GetQuestionWithOptions(ctx context.Context, questionID uuid.UUID) (*dto.QuestionWithOptions, error) {
+	return q.questionRepo.GetQuestionWithOptions(ctx, questionID)
 }

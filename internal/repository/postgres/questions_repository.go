@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/MikleMkhlv/QuizPlatform/internal/domain"
+	"github.com/MikleMkhlv/QuizPlatform/internal/dto"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -108,9 +109,54 @@ func (pq *PostgresQuestionsRepository) GetQuestionByID(ctx context.Context, ques
 	var question domain.Question
 	if err := pq.pool.QueryRow(ctx, query, questionID).Scan(&question.ID, &question.QuizID, &question.Text, &question.OrderNum, &question.CorrectOptionID); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, nil
+			return nil, fmt.Errorf("question {%v} not found", questionID)
 		}
 		return nil, err
 	}
 	return &question, nil
+}
+
+func (pq *PostgresQuestionsRepository) GetQuestionWithOptions(ctx context.Context, questionID uuid.UUID) (*dto.QuestionWithOptions, error) {
+	query := `
+			SELECT q.id, q.text,o.id, o.text, o.is_correct
+			FROM questions q
+			JOIN options o ON o.question_id = q.id
+			WHERE q.id = $1
+	`
+	var result dto.QuestionWithOptions
+	var options []domain.Option
+
+	rows, err := pq.pool.Query(ctx, query, questionID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, fmt.Errorf("not found question: %v", err)
+		}
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var question domain.Question
+		var option domain.Option
+
+		if err := rows.Scan(
+			&question.ID,
+			&question.QuizID,
+			&question.Text,
+			&question.OrderNum,
+			&question.CorrectOptionID,
+			&option.ID,
+			&option.Text,
+			&option.IsCorrect,
+		); err != nil {
+			return nil, fmt.Errorf("error scan row: %v", err)
+		}
+
+		option.QuestionID = question.ID
+		result.Question = question
+		options = append(options, option)
+	}
+
+	result.Options = options
+	return &result, nil
 }

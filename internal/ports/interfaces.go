@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/MikleMkhlv/QuizPlatform/internal/domain"
+	"github.com/MikleMkhlv/QuizPlatform/internal/dto"
 	"github.com/google/uuid"
 )
 
@@ -30,6 +31,7 @@ type QuestionService interface {
 	GetQuizzByID(ctx context.Context, quizzID uuid.UUID) (*domain.Quiz, error)
 	AddNewQuestionsWithAnswers(ctx context.Context, quizID uuid.UUID, text string, options []OptionRequest) error
 	GetQuestionByID(ctx context.Context, questionID uuid.UUID) (*domain.Question, error)
+	GetQuestionWithOptions(ctx context.Context, questionID uuid.UUID) (*dto.QuestionWithOptions, error)
 }
 
 type OptionRequest struct {
