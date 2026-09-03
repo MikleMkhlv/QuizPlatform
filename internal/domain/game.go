@@ -18,7 +18,7 @@ const (
 
 type PlayerAnswer struct {
 	UserID    uuid.UUID `json:"user_id"`
-	Answer    int       `json:"answer"`
+	OptionID  uuid.UUID `json:"option_id"`
 	IsCorrect bool      `json:"is_correct"`
 	AnswerAt  time.Time `json:"answer_at"`
 }
@@ -49,10 +49,10 @@ func NewGameState(roomID uuid.UUID, players []*User) *GameState {
 	}
 }
 
-func NewPlayerAnswer(userID uuid.UUID, answer int, isCorrect bool) *PlayerAnswer {
+func NewPlayerAnswer(userID, optionID uuid.UUID, isCorrect bool) *PlayerAnswer {
 	return &PlayerAnswer{
 		UserID:    userID,
-		Answer:    answer,
+		OptionID:  optionID,
 		IsCorrect: isCorrect,
 		AnswerAt:  time.Now(),
 	}
@@ -76,8 +76,8 @@ func (g *GameState) ConvertToByte() ([]byte, error) {
 	}
 	return data, nil
 }
-func (g *GameState) AddAnswer(answer PlayerAnswer) {
-	g.Answers = append(g.Answers, answer)
+func (g *GameState) AddAnswer(answer *PlayerAnswer) {
+	g.Answers = append(g.Answers, *answer)
 	g.UpdatedAt = time.Now()
 }
 

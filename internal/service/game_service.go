@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/uuid"
 	"github.com/MikleMkhlv/QuizPlatform/internal/domain"
+	"github.com/google/uuid"
 )
 
 type GameRepository interface {
@@ -15,16 +15,18 @@ type GameRepository interface {
 }
 
 type GameService struct {
-	gameRepo GameRepository
-	roomRepo RoomRepository
-	userRepo UserRepository
+	gameRepo     GameRepository
+	roomRepo     RoomRepository
+	userRepo     UserRepository
+	questionRepo QuestionRepository
 }
 
-func NewGameService(gameRepo GameRepository, roomRepo RoomRepository, userRepo UserRepository) *GameService {
+func NewGameService(gameRepo GameRepository, roomRepo RoomRepository, userRepo UserRepository, questionRepo QuestionRepository) *GameService {
 	return &GameService{
-		gameRepo: gameRepo,
-		roomRepo: roomRepo,
-		userRepo: userRepo,
+		gameRepo:     gameRepo,
+		roomRepo:     roomRepo,
+		userRepo:     userRepo,
+		questionRepo: questionRepo,
 	}
 }
 
@@ -51,10 +53,7 @@ func (s *GameService) CreateGame(ctx context.Context, roomID uuid.UUID) (*domain
 func (s *GameService) StartGame(ctx context.Context, roomID uuid.UUID) (*domain.GameState, error) {
 	existingState, err := s.gameRepo.Get(ctx, roomID)
 	if err != nil {
-		return nil, err
-	}
-	if existingState == nil {
-		return nil, fmt.Errorf("game state from room %s is not found in redis", roomID)
+		return nil, err // сюда попадёт и "not found"
 	}
 
 	if existingState.Status != domain.GameStatusWaiting {
@@ -70,7 +69,8 @@ func (s *GameService) StartGame(ctx context.Context, roomID uuid.UUID) (*domain.
 
 	return existingState, nil
 }
-func (s *GameService) SubmitAnswer(ctx context.Context, roomID, userID uuid.UUID, answer int, isCorrect bool) error {
+
+func (s *GameService) SubmitAnswer(ctx context.Context, roomID, questionID, userID uuid.UUID, optionID uuid.UUID) error {
 	existingState, err := s.gameRepo.Get(ctx, roomID)
 	if err != nil {
 		return err
@@ -81,8 +81,19 @@ func (s *GameService) SubmitAnswer(ctx context.Context, roomID, userID uuid.UUID
 	if existingState.Status != domain.GameStatusActive {
 		return fmt.Errorf("game in room %s is not active, status: %s", roomID, existingState.Status)
 	}
-	userAnswer := domain.NewPlayerAnswer(userID, answer, isCorrect)
-	existingState.AddAnswer(*userAnswer)
+
+	question, err := s.questionRepo.GetQuestionByID(ctx, questionID)
+	if err != nil {
+		return fmt.Errorf("get question %s: %w", questionID, err)
+	}
+	if question == nil {
+		return fmt.Errorf("question %s not found", questionID)
+	}
+
+	isCorrect := question.CorrectOptionID == optionID
+
+	userAnswer := domain.NewPlayerAnswer(userID, optionID, isCorrect)
+	existingState.AddAnswer(userAnswer)
 
 	if err := s.gameRepo.Save(ctx, existingState); err != nil {
 		return err

@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/uuid"
 	"github.com/MikleMkhlv/QuizPlatform/internal/domain"
+	"github.com/google/uuid"
 )
 
 type UserRepository interface {
@@ -56,4 +56,7 @@ func (ur *UserService) GetTopUsers(ctx context.Context, limit int) ([]*domain.Us
 	}
 
 	return topUsers, nil
+}
+func (ur *UserService) GetPlayerByID(ctx context.Context, playerID uuid.UUID) (*domain.User, error) {
+	return ur.GetPlayerByID(ctx, playerID)
 }
